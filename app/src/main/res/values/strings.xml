@@ -9,5 +9,7 @@
     <string name="prompt_email">email</string>
     <string name="error_invalid_email">invalid email</string>
     <string name="title_activity_sign_in">Sign in</string>
+    <string name="title_all_contacts">All contacts</string>
+    <string name="title_known_contacts">known contacts</string>
 
 </resources>

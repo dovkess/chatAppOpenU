@@ -5,6 +5,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.Activity;
+
 import android.app.LoaderManager.LoaderCallbacks;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -36,15 +37,22 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -219,35 +227,55 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                         PERMISSION_INTERNET);
             }
             else {
-                    // Instantiate the RequestQueue.
-                    RequestQueue queue = Volley.newRequestQueue(SignIn.this);
-                    String url = "http://httpbin.org/ip";
+                // Instantiate the RequestQueue.
+                RequestQueue queue = Volley.newRequestQueue(SignIn.this);
+                String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser";
 
-                    // Request a string response from the provided URL.
-                    StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                            new Response.Listener<String>() {
-                                @Override
-                                public void onResponse(String response) {
-                                    Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
-                                    if(! response.equals(GOOD_RESPONCE)){
-                                        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
-                                        SharedPreferences.Editor editor = prefs.edit();
-                                        editor.putString("uid", mPhoneId);
-                                        editor.apply();
-                                        Intent mainPage = new Intent(SignIn.this, MainRouter.class);
-                                        startActivity(mainPage);
-                                    }
-                                }
-
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            mPhoneView.setText(error.getMessage());
+                // Request a Json response from the provided URL.
+                JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            Integer res_status = Integer.parseInt(response.getString("status"));
+                            //Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
+                            if (res_status == 0) {
+                                final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putString("uid", mPhoneId);
+                                editor.apply();
+                                Intent mainPage = new Intent(SignIn.this, MainRouter.class);
+                                startActivity(mainPage);
+                            }
+                        }catch(JSONException e){
+                            e.getStackTrace();
                         }
-                    });
-                    queue.add(stringRequest);
+                    }
+                }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    mPhoneView.setText(error.getMessage());
+                }
+                }){
+                @Override
+                public Map<String,String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                    params.put("Content-Type", "application/json");
+                    return params;
+                }
+                @Override
+                protected Map<String,String> getParams(){
+                Map<String,String> params = new HashMap<String, String>();
+                params.put("name", "dov");
+                params.put("id" , mPhoneId);
+                params.put("email", mEmail);
+                params.put("phone", mPhoneNumber);
+                return params;
+                }
+            };
+            jRequest.setShouldCache(false);
+            queue.add(jRequest);
             }
-            return true;
+        return true;
         }
 
         @Override
