@@ -13,7 +13,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-
+// TODO: delete this class and view
 public class MainRouter extends ActionBarActivity {
     final static int PERMISSION_READ_STATE = 0;
     @Override

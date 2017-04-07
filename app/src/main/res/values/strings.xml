@@ -11,5 +11,6 @@
     <string name="title_activity_sign_in">Sign in</string>
     <string name="title_all_contacts">All contacts</string>
     <string name="title_known_contacts">known contacts</string>
-
+    <string name="message_view_hint">Enter message</string>
+    <string name="Send">Send</string>
 </resources>

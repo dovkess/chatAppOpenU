@@ -82,12 +82,7 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
         String mPhoneId = "";
         Context mAppContext = getApplicationContext();
         if (ContextCompat.checkSelfPermission(SignIn.this, Manifest.permission.READ_PHONE_STATE)
-                != PackageManager.PERMISSION_GRANTED){
-                            ActivityCompat.requestPermissions(SignIn.this, new String[]{
-                            Manifest.permission.READ_PHONE_STATE},
-                            PERMISSION_READ_STATE);
-        }
-        else{
+                == PackageManager.PERMISSION_GRANTED){
             TelephonyManager tMgr = (TelephonyManager) mAppContext.getSystemService(Context.TELEPHONY_SERVICE);
             mPhoneId = tMgr.getDeviceId();
         }
@@ -228,11 +223,21 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             }
             else {
                 // Instantiate the RequestQueue.
+
                 RequestQueue queue = Volley.newRequestQueue(SignIn.this);
+                //String url = "https://httpbin.org/put";
                 String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser";
+                JSONObject jobj = new JSONObject();
+                try{
+                    jobj.put("name", "asdf");
+                    jobj.put("email", "asdf@fasdf.com");
+                    jobj.put("id", "23");
+                    jobj.put("phone", "34534");
+                }
+                catch (Exception e){}
 
                 // Request a Json response from the provided URL.
-                JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, null, new Response.Listener<JSONObject>() {
+                JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, jobj, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
@@ -243,7 +248,7 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.putString("uid", mPhoneId);
                                 editor.apply();
-                                Intent mainPage = new Intent(SignIn.this, MainRouter.class);
+                                Intent mainPage = new Intent(SignIn.this, MainPage.class);
                                 startActivity(mainPage);
                             }
                         }catch(JSONException e){
@@ -251,25 +256,16 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                         }
                     }
                 }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    mPhoneView.setText(error.getMessage());
-                }
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        mPhoneView.setText(error.getMessage());
+                    }
                 }){
                 @Override
                 public Map<String,String> getHeaders() throws AuthFailureError {
-                Map<String, String> params = new HashMap<String, String>();
+                    Map<String, String> params = new HashMap<String, String>();
                     params.put("Content-Type", "application/json");
                     return params;
-                }
-                @Override
-                protected Map<String,String> getParams(){
-                Map<String,String> params = new HashMap<String, String>();
-                params.put("name", "dov");
-                params.put("id" , mPhoneId);
-                params.put("email", mEmail);
-                params.put("phone", mPhoneNumber);
-                return params;
                 }
             };
             jRequest.setShouldCache(false);
@@ -282,24 +278,12 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
         protected void onPostExecute(final Boolean success) {
             mAuthTask = null;
             showProgress(false);
-            //finish();
         }
 
         @Override
         protected void onCancelled() {
             mAuthTask = null;
             showProgress(false);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_READ_STATE: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {}
-                else {}
-                return;
-            }
         }
     }
 }
