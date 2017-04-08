@@ -216,14 +216,7 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
         @Override
         protected Boolean doInBackground(Void... params) {
             if (ContextCompat.checkSelfPermission(SignIn.this, Manifest.permission.INTERNET)
-                    != PackageManager.PERMISSION_GRANTED){
-                    ActivityCompat.requestPermissions(SignIn.this, new String[]{
-                                Manifest.permission.INTERNET},
-                        PERMISSION_INTERNET);
-            }
-            else {
-                // Instantiate the RequestQueue.
-
+                    == PackageManager.PERMISSION_GRANTED){
                 RequestQueue queue = Volley.newRequestQueue(SignIn.this);
                 //String url = "https://httpbin.org/put";
                 String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser";

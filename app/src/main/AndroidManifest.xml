@@ -25,8 +25,18 @@
         <activity
             android:name=".SignIn"
             android:label="@string/title_activity_sign_in"
-            android:windowSoftInputMode="adjustResize|stateVisible"></activity>
-        <activity android:name=".chatWin"></activity>
+            android:windowSoftInputMode="adjustResize|stateVisible" />
+        <activity android:name=".chatWin" />
+
+        <service android:name=".tokenService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".MessageReceived"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>

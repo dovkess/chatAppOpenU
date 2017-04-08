@@ -90,13 +90,18 @@ public class MainPage extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_page);
-        int read, state;
+        int read, state, internet;
+        internet = ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.INTERNET);
         read = ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.READ_CONTACTS);
         state = ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.READ_PHONE_STATE);
 
-        if (read != PackageManager.PERMISSION_GRANTED || state != PackageManager.PERMISSION_GRANTED) {
+        if (read != PackageManager.PERMISSION_GRANTED
+                || state != PackageManager.PERMISSION_GRANTED
+                || internet != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainPage.this, new String[]{
-                            Manifest.permission.READ_CONTACTS, Manifest.permission.READ_PHONE_STATE},
+                            Manifest.permission.READ_CONTACTS,
+                            Manifest.permission.READ_PHONE_STATE,
+                            Manifest.permission.INTERNET},
                     PERMISSION_READ_CONTACTS);
         }
 
@@ -192,35 +197,41 @@ public class MainPage extends AppCompatActivity {
                 jobj.put("number", params[0]);
             } catch (Exception e) {}
 
-            RequestQueue queue = Volley.newRequestQueue(MainPage.this);
+            if (ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.INTERNET)
+                    == PackageManager.PERMISSION_GRANTED) {
 
-            JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, jobj, new Response.Listener<JSONObject>() {
-                @Override
-                public void onResponse(JSONObject response) {
-                    try {
-                        Integer res_status = Integer.parseInt(response.getString("status"));
-                        if (res_status == 0) {
-                            Intent startChat = new Intent(MainPage.this, chatWin.class);
-                            startChat.putExtra("phone", params[0]);
-                            startChat.putExtra("name", params[1]);
-                            startActivity(startChat);
+                RequestQueue queue = Volley.newRequestQueue(MainPage.this);
+
+                JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, jobj, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            Integer res_status = Integer.parseInt(response.getString("status"));
+                            if (res_status == 0) {
+                                Intent startChat = new Intent(MainPage.this, chatWin.class);
+                                startChat.putExtra("phone", params[0]);
+                                startChat.putExtra("name", params[1]);
+                                startActivity(startChat);
+                            }
+                        } catch (JSONException e) {
                         }
-                    } catch (JSONException e) {}
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {}
-            }) {
-                @Override
-                public Map<String, String> getHeaders() throws AuthFailureError {
-                    Map<String, String> params = new HashMap<String, String>();
-                    params.put("Content-Type", "application/json");
-                    return params;
-                }
-            };
-            jRequest.setShouldCache(false);
-            queue.add(jRequest);
-            return true;
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                    }
+                }) {
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> params = new HashMap<String, String>();
+                        params.put("Content-Type", "application/json");
+                        return params;
+                    }
+                };
+                jRequest.setShouldCache(false);
+                queue.add(jRequest);
+            }
+                return true;
         }
         protected void onPostExecute(Boolean result) {}
     }
