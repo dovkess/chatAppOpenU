@@ -14,36 +14,26 @@ import android.content.Intent;
 import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.AsyncTask;
 
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.provider.ContactsContract;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
-import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -70,8 +60,10 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
     private AutoCompleteTextView mEmailView;
     private EditText mPhoneView;
     private EditText mPhoneIdView;
+    private EditText mCountryCode;
     private View mProgressView;
     private View mLoginFormView;
+    String countryCode;
     final int PERMISSION_READ_STATE = 0;
     final int PERMISSION_INTERNET = 1;
     final String GOOD_RESPONCE = "User Signup Successful.";
@@ -81,11 +73,16 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
         String mPhoneId = "";
+        mPhoneIdView = (EditText) findViewById(R.id.device_id);
         Context mAppContext = getApplicationContext();
         if (ContextCompat.checkSelfPermission(SignIn.this, Manifest.permission.READ_PHONE_STATE)
                 == PackageManager.PERMISSION_GRANTED){
             TelephonyManager tMgr = (TelephonyManager) mAppContext.getSystemService(Context.TELEPHONY_SERVICE);
             mPhoneId = tMgr.getDeviceId();
+            mPhoneIdView.setText(mPhoneId);
+            countryCode = tMgr.getSimCountryIso();
+            mCountryCode = (EditText) findViewById(R.id.country_code);
+            mCountryCode.setText(ISOCountryToPrefix.getPhone(countryCode));
         }
 
         // Set up the login form.
@@ -94,9 +91,6 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
 
 
         mPhoneView = (EditText) findViewById(R.id.phone_number);
-
-        mPhoneIdView = (EditText) findViewById(R.id.device_id);
-        mPhoneIdView.setText(mPhoneId);
 
         Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
@@ -144,14 +138,17 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             focusView = mEmailView;
             cancel = true;
         }
+        else if(TextUtils.isEmpty(phone_number)){
+            mEmailView.setError(getString(R.string.error_field_required));
+            focusView = mPhoneView;
+            cancel = true;
+        }
 
         if (cancel) {
             // There was an error; don't attempt login and focus the first
             // form field with an error.
             focusView.requestFocus();
         } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
             showProgress(true);
             mAuthTask = new UserLoginTask(email, phone_number, phone_id);
             mAuthTask.execute((Void) null);
@@ -167,12 +164,8 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     public void showProgress(final boolean show) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
-
+            int shortAnimTime = getResources().getInteger(android.R.integer.config_longAnimTime);
             mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
             mLoginFormView.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
@@ -215,7 +208,8 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
         }
 
         public byte[] getByteBodey(){
-            String stringBytes = "{\n\t\"name\": \"" + "The best name" + "\", \n\t\"id\": \"" + mPhoneId +
+            // TODO: change this after long/int fix (replace 123 with actual mPhoneId)
+            String stringBytes = "{\n\t\"name\": \"" + "The best name" + "\", \n\t\"id\": \"" + "123" +
                     "\", \n\t\"email\": \"" + mEmail + "\", \n\t\"phone\": \"" + mPhoneNumber +
                     "\"\n\t\n}";
             byte[] bytes = stringBytes.getBytes();
@@ -234,17 +228,20 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                 StringRequest jRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        //try {
-                            Integer res_status = 0; //Integer.parseInt(response.getString("status"));
-                            //Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
+                        try {
+                            Intent mainPageIntent = new Intent(SignIn.this, MainPage.class);
+                            JSONObject jresponse = new JSONObject(response);
+                            Integer res_status = Integer.parseInt(jresponse.getString("status"));
                             if (res_status == 0) {
                                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.putString("uid", mPhoneId);
                                 editor.apply();
-                                Intent mainPage = new Intent(SignIn.this, MainPage.class);
-                                startActivity(mainPage);
+                                startActivity(mainPageIntent);
                             }
+                            else if(res_status == 1)
+                                startActivity(mainPageIntent);
+                        }catch(Exception e){}
                     }
                 }, new Response.ErrorListener() {
                     @Override

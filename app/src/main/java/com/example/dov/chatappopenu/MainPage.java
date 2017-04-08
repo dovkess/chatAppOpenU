@@ -39,6 +39,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
@@ -103,37 +104,38 @@ public class MainPage extends AppCompatActivity {
                             Manifest.permission.READ_PHONE_STATE,
                             Manifest.permission.INTERNET},
                     PERMISSION_READ_CONTACTS);
+         }
+        else {
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String uid = prefs.getString("uid", "-1");
+            if (uid.equals("-1")) {
+                Intent signIn = new Intent(this, SignIn.class);
+                startActivity(signIn);
+            }
+            mSearchContact = (EditText) findViewById(R.id.search_contact_field);
+            contacts = new ArrayList<String>();
+            mListView = (ListView) findViewById(R.id.list_view);
+            navigation = (BottomNavigationView) findViewById(R.id.navigation);
+
+            fillContacts("");
+            navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+            navigation.setSelectedItemId(R.id.all_contacts_item);
+            mSearchContact.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+                    String lookup = editable.toString();
+                    fillContacts(lookup);
+                }
+            });
         }
-
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String uid = prefs.getString("uid", "-1");
-        if (uid.equals("-1")) {
-            Intent signIn = new Intent(this, SignIn.class);
-            startActivity(signIn);
-        }
-        mSearchContact = (EditText) findViewById(R.id.search_contact_field);
-        contacts = new ArrayList<String>();
-        mListView = (ListView) findViewById(R.id.list_view);
-        navigation = (BottomNavigationView) findViewById(R.id.navigation);
-
-        fillContacts("");
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-        navigation.setSelectedItemId(R.id.all_contacts_item);
-        mSearchContact.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                String lookup = editable.toString();
-                fillContacts(lookup);
-            }
-        });
     }
 
     public void fillContacts(String lookup) {
@@ -188,44 +190,50 @@ public class MainPage extends AppCompatActivity {
         }
     }
 
-
     private class isNumberRegistered extends AsyncTask<String, Void, Boolean> {
+        private byte[] getByteBodey(String number){
+            String str_res = "{\n\t\"phone\": \"" + number + "\"\n}";
+            return str_res.getBytes();
+        }
+
         protected Boolean doInBackground(final String... params) {
             String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/messaging/validateAppUser";
-            JSONObject jobj = new JSONObject();
-            try {
-                jobj.put("number", params[0]);
-            } catch (Exception e) {}
 
             if (ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.INTERNET)
                     == PackageManager.PERMISSION_GRANTED) {
-
                 RequestQueue queue = Volley.newRequestQueue(MainPage.this);
-
-                JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, jobj, new Response.Listener<JSONObject>() {
+                StringRequest jRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
                     @Override
-                    public void onResponse(JSONObject response) {
+                    public void onResponse(String response) {
                         try {
-                            Integer res_status = Integer.parseInt(response.getString("status"));
+                            JSONObject jresponse = new JSONObject(response);
+                            Integer res_status = Integer.parseInt(jresponse.getString("status"));
                             if (res_status == 0) {
                                 Intent startChat = new Intent(MainPage.this, chatWin.class);
                                 startChat.putExtra("phone", params[0]);
                                 startChat.putExtra("name", params[1]);
                                 startActivity(startChat);
                             }
+                            else if(res_status == 1){
+                                Toast.makeText(getApplicationContext(), "He/She does not have the app", Toast.LENGTH_LONG);
+                            }
                         } catch (JSONException e) {
+                            e.getStackTrace();
                         }
                     }
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
+                        error.getStackTrace();
                     }
                 }) {
                     @Override
-                    public Map<String, String> getHeaders() throws AuthFailureError {
-                        Map<String, String> params = new HashMap<String, String>();
-                        params.put("Content-Type", "application/json");
-                        return params;
+                    public byte[] getBody() throws AuthFailureError {
+                        return getByteBodey(params[0]);
+                    }
+                    @Override
+                    public String getBodyContentType() {
+                        return "application/json; charset=" + getParamsEncoding();
                     }
                 };
                 jRequest.setShouldCache(false);
@@ -234,5 +242,17 @@ public class MainPage extends AppCompatActivity {
                 return true;
         }
         protected void onPostExecute(Boolean result) {}
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if(requestCode == PERMISSION_READ_CONTACTS && grantResults.length > 0){
+            Toast.makeText(getApplicationContext(), "GOT_IT", Toast.LENGTH_LONG);
+            startActivity(new Intent(MainPage.this, MainPage.class));
+        }
+        else{
+            Toast.makeText(getApplicationContext(), "You stupid ass hole. now you can't run the app.", Toast.LENGTH_LONG);
+        }
+        return;
     }
 }

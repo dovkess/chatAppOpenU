@@ -42,6 +42,7 @@ public class chatWin extends ListActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_chat_win);
 
         Intent intPhone = getIntent();
