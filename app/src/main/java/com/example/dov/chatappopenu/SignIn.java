@@ -214,6 +214,14 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             mPhoneId = phone_id;
         }
 
+        public byte[] getByteBodey(){
+            String stringBytes = "{\n\t\"name\": \"" + "The best name" + "\", \n\t\"id\": \"" + mPhoneId +
+                    "\", \n\t\"email\": \"" + mEmail + "\", \n\t\"phone\": \"" + mPhoneNumber +
+                    "\"\n\t\n}";
+            byte[] bytes = stringBytes.getBytes();
+            return bytes;
+        }
+
         @Override
         protected Boolean doInBackground(Void... params) {
             if (ContextCompat.checkSelfPermission(SignIn.this, Manifest.permission.INTERNET)
@@ -221,14 +229,6 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                 RequestQueue queue = Volley.newRequestQueue(SignIn.this);
                 //String url = "https://httpbin.org/put";
                 String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser";
-                JSONObject jobj = new JSONObject();
-                try{
-                    jobj.put("name", "asdf");
-                    jobj.put("email", "asdf@fasdf.com");
-                    jobj.put("id", "23");
-                    jobj.put("phone", "34534");
-                }
-                catch (Exception e){}
 
                 // Request a Json response from the provided URL.
                 StringRequest jRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
@@ -245,9 +245,6 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                                 Intent mainPage = new Intent(SignIn.this, MainPage.class);
                                 startActivity(mainPage);
                             }
-                        //}catch(JSONException e){
-                        //    e.getStackTrace();
-                        //}
                     }
                 }, new Response.ErrorListener() {
                     @Override
@@ -255,34 +252,15 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                         mPhoneView.setText(error.getMessage());
                     }
                 }){
-                //@Override
-//                public Map<String,String> getHeaders() throws AuthFailureError {
-//                    Map<String, String> params = new HashMap<String, String>();
-//                    params.put("Content-Type", "application/json");
-//                    return params;
-//                }
                 @Override
                 public byte[] getBody() throws AuthFailureError {
-                    return "{\n\t\"name\": \"jkhkjhkjh\", \n\t\"id\": \"874576\", \n\t\"email\": \"@.\", \n\t\"phone\": \"097666934500\"\n\t\n}".getBytes();
+                    return getByteBodey();
                 }
                 @Override
                 public String getBodyContentType() {
-                    return "application/raw; charset=" + getParamsEncoding();
+                    return "application/json; charset=" + getParamsEncoding();
                 }
-                //@Override
-                //public Map<String, String> getParams(){
-                //    Map<String, String> params = new HashMap<String, String>();
-                //    params.put("name", "asdf");
-                //    params.put("email", "@.");
-                //    params.put("phone", "546");
-                //    params.put("id", "234");
-                //    return params;
-                //}
             };
-            jRequest.setRetryPolicy(new DefaultRetryPolicy(
-                        1000000,
-                        DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                        DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
             jRequest.setShouldCache(false);
             queue.add(jRequest);
             }
