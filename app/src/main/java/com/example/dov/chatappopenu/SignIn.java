@@ -219,7 +219,7 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                     == PackageManager.PERMISSION_GRANTED){
                 RequestQueue queue = Volley.newRequestQueue(SignIn.this);
                 //String url = "https://httpbin.org/put";
-                String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser";
+                String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser/";
                 JSONObject jobj = new JSONObject();
                 try{
                     jobj.put("name", "asdf");
@@ -228,13 +228,13 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                     jobj.put("phone", "34534");
                 }
                 catch (Exception e){}
-
+                url = url + jobj.toString();
                 // Request a Json response from the provided URL.
-                JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, jobj, new Response.Listener<JSONObject>() {
+                StringRequest jRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
                     @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            Integer res_status = Integer.parseInt(response.getString("status"));
+                    public void onResponse(String response) {
+                        //try {
+                            Integer res_status = 0; //Integer.parseInt(response.getString("status"));
                             //Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
                             if (res_status == 0) {
                                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
@@ -244,9 +244,9 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                                 Intent mainPage = new Intent(SignIn.this, MainPage.class);
                                 startActivity(mainPage);
                             }
-                        }catch(JSONException e){
-                            e.getStackTrace();
-                        }
+                        //}catch(JSONException e){
+                        //    e.getStackTrace();
+                        //}
                     }
                 }, new Response.ErrorListener() {
                     @Override

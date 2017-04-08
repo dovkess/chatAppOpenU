@@ -7,6 +7,8 @@ import android.os.IBinder;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.util.Map;
+
 public class MessageReceived extends FirebaseMessagingService {
 
     @Override
@@ -17,7 +19,9 @@ public class MessageReceived extends FirebaseMessagingService {
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            remoteMessage.getData();
+            Map<String, String> data = remoteMessage.getData();
+            String message = data.get("message");
+
         }
 
         // Check if message contains a notification payload.
