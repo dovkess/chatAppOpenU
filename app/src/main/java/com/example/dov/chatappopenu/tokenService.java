@@ -4,7 +4,9 @@ import android.*;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.preference.PreferenceManager;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -15,6 +17,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
@@ -35,32 +38,35 @@ public class tokenService extends FirebaseInstanceIdService {
     public void onTokenRefresh() {
         String refreshedToken = FirebaseInstanceId.getInstance().getToken();
         Log.d(TAG, "Refreshed token: " + refreshedToken);
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(tokenService.this);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("token", refreshedToken);
+        editor.apply();
         sendRegistrationToServer(refreshedToken);
     }
 
-    private void sendRegistrationToServer(String refreshedToken) {
+    private byte[] getByteBodey(String token, String uid){
+        String toByte = "{\n\t\"token\": \""+token+"\",\n\t\"id\": \""+uid+"\"\n}";
+        return toByte.getBytes();
+    }
+
+    private void sendRegistrationToServer(final String tkn) {
         int state = ContextCompat.checkSelfPermission(tokenService.this, android.Manifest.permission.READ_PHONE_STATE);
         int internet = ContextCompat.checkSelfPermission(tokenService.this, Manifest.permission.INTERNET);
         if (state == PackageManager.PERMISSION_GRANTED && internet == PackageManager.PERMISSION_GRANTED){
             TelephonyManager tMgr = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
-            String mPhoneId = tMgr.getDeviceId();
+            final String mPhoneId = tMgr.getDeviceId();
 
-            String url = "???";
-
-            JSONObject jobj = new JSONObject();
-            try {
-                jobj.put("pid", mPhoneId);
-                jobj.put("token", refreshedToken);
-            }
-            catch (Exception e){}
-
+            String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/updateToken";
+            //String url = "https://httpbin.org/put";
             RequestQueue queue = Volley.newRequestQueue(tokenService.this);
 
-            JsonObjectRequest jRequest = new JsonObjectRequest(Request.Method.PUT, url, jobj, new Response.Listener<JSONObject>() {
+            StringRequest sRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {
                 @Override
-                public void onResponse(JSONObject response) {
+                public void onResponse(String response) {
                     try {
-                        Integer res_status = Integer.parseInt(response.getString("status"));
+                        JSONObject jResponce = new JSONObject(response);
+                        Integer res_status = Integer.parseInt(jResponce.getString("status"));
                         if (res_status == 0) {}
                     } catch (JSONException e) {}
                 }
@@ -69,14 +75,16 @@ public class tokenService extends FirebaseInstanceIdService {
                 public void onErrorResponse(VolleyError error) {}
             }) {
                 @Override
-                public Map<String, String> getHeaders() throws AuthFailureError {
-                    Map<String, String> params = new HashMap<String, String>();
-                    params.put("Content-Type", "application/json");
-                    return params;
+                public byte[] getBody() throws AuthFailureError {
+                    return getByteBodey(tkn, mPhoneId);
+                }
+                @Override
+                public String getBodyContentType() {
+                    return "application/json; charset=" + getParamsEncoding();
                 }
             };
-            jRequest.setShouldCache(false);
-            queue.add(jRequest);
+            sRequest.setShouldCache(false);
+            queue.add(sRequest);
         }
     }
 }

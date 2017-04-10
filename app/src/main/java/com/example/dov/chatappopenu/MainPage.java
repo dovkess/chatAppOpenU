@@ -52,6 +52,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static android.telephony.PhoneNumberUtils.extractNetworkPortion;
+import static android.telephony.PhoneNumberUtils.isGlobalPhoneNumber;
+import static android.telephony.PhoneNumberUtils.normalizeNumber;
+
 public class MainPage extends AppCompatActivity {
 
     final int PERMISSION_READ_CONTACTS = 1;
@@ -184,6 +188,11 @@ public class MainPage extends AppCompatActivity {
             // TODO: prompt the user for one of the numbers
             if (!contactNumbers.isEmpty()) {
                 number = contactNumbers.get(0);
+                if(!number.startsWith("+")){
+                    number = "+972" + number;
+                } else if(number.startsWith("+9725")){
+                    number = number.replace("+9725", "+97205");
+                }
                 Toast.makeText(getApplicationContext(), "item clicked : \n" + number, Toast.LENGTH_LONG).show();
                 new isNumberRegistered().execute(number, name);
             }
@@ -214,7 +223,7 @@ public class MainPage extends AppCompatActivity {
                                 startChat.putExtra("name", params[1]);
                                 startActivity(startChat);
                             }
-                            else if(res_status == 1){
+                            else if(res_status == -1){
                                 Toast.makeText(getApplicationContext(), "He/She does not have the app", Toast.LENGTH_LONG);
                             }
                         } catch (JSONException e) {

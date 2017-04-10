@@ -24,9 +24,11 @@ import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -45,6 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static android.telephony.PhoneNumberUtils.stripSeparators;
+
 
 /**
  * A login screen that offers login via email/password.
@@ -59,36 +63,40 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
     // UI references.
     private AutoCompleteTextView mEmailView;
     private EditText mPhoneView;
-    private EditText mPhoneIdView;
+    private EditText mUserView;
     private EditText mCountryCode;
+    private Spinner mCarrier;
     private View mProgressView;
     private View mLoginFormView;
     String countryCode;
+    String mPhoneId;
     final int PERMISSION_READ_STATE = 0;
     final int PERMISSION_INTERNET = 1;
-    final String GOOD_RESPONCE = "User Signup Successful.";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
-        String mPhoneId = "";
-        mPhoneIdView = (EditText) findViewById(R.id.device_id);
+        mUserView = (EditText) findViewById(R.id.user_name_view);
         Context mAppContext = getApplicationContext();
         if (ContextCompat.checkSelfPermission(SignIn.this, Manifest.permission.READ_PHONE_STATE)
                 == PackageManager.PERMISSION_GRANTED){
             TelephonyManager tMgr = (TelephonyManager) mAppContext.getSystemService(Context.TELEPHONY_SERVICE);
             mPhoneId = tMgr.getDeviceId();
-            mPhoneIdView.setText(mPhoneId);
             countryCode = tMgr.getSimCountryIso();
             mCountryCode = (EditText) findViewById(R.id.country_code);
-            mCountryCode.setText(ISOCountryToPrefix.getPhone(countryCode));
+            String country_code_num = ISOCountryToPrefix.getPhone(countryCode);
+            mCountryCode.setText(country_code_num);
+            mCarrier = (Spinner) findViewById(R.id.carrier);
+            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(this,
+                    android.R.layout.simple_spinner_item, (CountryToProvider.getProvider(country_code_num)));
+            spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            mCarrier.setAdapter(spinnerArrayAdapter);
         }
 
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
-
 
         mPhoneView = (EditText) findViewById(R.id.phone_number);
 
@@ -122,8 +130,11 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
 
         // Store values at the time of the login attempt.
         String email = mEmailView.getText().toString();
-        String phone_number = mPhoneView.getText().toString();
-        String phone_id = mPhoneIdView.getText().toString();
+        String local_number = mPhoneView.getText().toString();
+        String country_code = mCountryCode.getText().toString();
+        String carrier = mCarrier.getSelectedItem().toString();
+        String phone_number = country_code + carrier + stripSeparators(local_number);
+        String user_name = mUserView.getText().toString();
 
         boolean cancel = false;
         View focusView = null;
@@ -138,11 +149,13 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             focusView = mEmailView;
             cancel = true;
         }
-        else if(TextUtils.isEmpty(phone_number)){
+        if(TextUtils.isEmpty(phone_number)){
             mEmailView.setError(getString(R.string.error_field_required));
             focusView = mPhoneView;
             cancel = true;
         }
+        if(TextUtils.isEmpty(user_name))
+            user_name = "looser";
 
         if (cancel) {
             // There was an error; don't attempt login and focus the first
@@ -150,7 +163,7 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             focusView.requestFocus();
         } else {
             showProgress(true);
-            mAuthTask = new UserLoginTask(email, phone_number, phone_id);
+            mAuthTask = new UserLoginTask(email, phone_number, mPhoneId, user_name);
             mAuthTask.execute((Void) null);
         }
     }
@@ -200,16 +213,19 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
         private final String mEmail;
         private final String mPhoneNumber;
         private final String mPhoneId;
+        private final String mUser;
 
-        UserLoginTask(String email, String phone_number, String phone_id) {
+        UserLoginTask(String email, String phone_number, String phone_id, String user) {
             mEmail = email;
             mPhoneNumber = phone_number;
             mPhoneId = phone_id;
+            mUser = user;
         }
 
         public byte[] getByteBodey(){
-            // TODO: change this after long/int fix (replace 123 with actual mPhoneId)
-            String stringBytes = "{\n\t\"name\": \"" + "The best name" + "\", \n\t\"id\": \"" + "123" +
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
+            String token = prefs.getString("token", "-1");
+            String stringBytes = "{\n\t\"token\": \"" + token + "\",\n\t\"name\": \"" + mUser + "\", \n\t\"id\": \"" + mPhoneId +
                     "\", \n\t\"email\": \"" + mEmail + "\", \n\t\"phone\": \"" + mPhoneNumber +
                     "\"\n\t\n}";
             byte[] bytes = stringBytes.getBytes();
@@ -232,15 +248,16 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                             Intent mainPageIntent = new Intent(SignIn.this, MainPage.class);
                             JSONObject jresponse = new JSONObject(response);
                             Integer res_status = Integer.parseInt(jresponse.getString("status"));
-                            if (res_status == 0) {
+                            if (res_status == 0 || res_status == 1) {
                                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.putString("uid", mPhoneId);
+                                editor.putString("phone", mPhoneNumber);
                                 editor.apply();
                                 startActivity(mainPageIntent);
                             }
-                            else if(res_status == 1)
-                                startActivity(mainPageIntent);
+//                            else if(res_status == 1)
+//                                startActivity(mainPageIntent);
                         }catch(Exception e){}
                     }
                 }, new Response.ErrorListener() {
