@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -55,6 +56,7 @@ import java.util.Map;
 import static android.telephony.PhoneNumberUtils.extractNetworkPortion;
 import static android.telephony.PhoneNumberUtils.isGlobalPhoneNumber;
 import static android.telephony.PhoneNumberUtils.normalizeNumber;
+import static android.telephony.PhoneNumberUtils.stripSeparators;
 
 public class MainPage extends AppCompatActivity {
 
@@ -64,6 +66,7 @@ public class MainPage extends AppCompatActivity {
     private ListView mListView;
     BottomNavigationView navigation;
     ArrayList<String> contacts;
+    ArrayList<String> knownContacts = new ArrayList<String>();
     Cursor c;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -84,7 +87,16 @@ public class MainPage extends AppCompatActivity {
                     });
                     return true;
                 case R.id.known_contacts_item:
-                    //mTextMessage.setText(R.string.title_dashboard);
+                    ArrayAdapter<String> arrayAdapterKnown = new ArrayAdapter<String>(
+                            getApplicationContext(), R.layout.list_item, R.id.text1, knownContacts);
+                    mListView.setAdapter(arrayAdapterKnown);
+                    mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            String pickedName = knownContacts.get(position);
+                            getPhoneFromeName(pickedName);
+                        }
+                    });
                     return true;
             }
             return false;
@@ -122,6 +134,7 @@ public class MainPage extends AppCompatActivity {
             navigation = (BottomNavigationView) findViewById(R.id.navigation);
 
             fillContacts("");
+            new fillknown().execute();
             navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
             navigation.setSelectedItemId(R.id.all_contacts_item);
             mSearchContact.addTextChangedListener(new TextWatcher() {
@@ -152,7 +165,7 @@ public class MainPage extends AppCompatActivity {
             String selection = ContactsContract.Contacts.HAS_PHONE_NUMBER + " = '1'";
             c = getContentResolver().query(contentURI, null, selection, null, null);
             c.moveToFirst();
-            while (c.moveToNext()) {
+            do {
                 String name = c.getString(c.getColumnIndex(displayName));
                 if (lookup == "")
                     contacts.add(name);
@@ -163,7 +176,7 @@ public class MainPage extends AppCompatActivity {
                         contacts.add(name);
                     }
                 }
-            }
+            }while (c.moveToNext());
             Collections.sort(contacts);
         }
         navigation.setSelectedItemId(navigation.getSelectedItemId());
@@ -181,13 +194,15 @@ public class MainPage extends AppCompatActivity {
                     projection, selection, null, null);
 
             c.moveToFirst();
-            while (c.moveToNext()) {
+            do {
                 contactNumbers.add(c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
             }
+            while (c.moveToNext());
             c.close();
             // TODO: prompt the user for one of the numbers
             if (!contactNumbers.isEmpty()) {
                 number = contactNumbers.get(0);
+                number = stripSeparators(number);
                 if(!number.startsWith("+")){
                     number = "+972" + number;
                 } else if(number.startsWith("+9725")){
@@ -252,6 +267,34 @@ public class MainPage extends AppCompatActivity {
         }
         protected void onPostExecute(Boolean result) {}
     }
+
+    public class fillknown extends AsyncTask<String, Void, Void>{
+        @Override
+        protected Void doInBackground(String... strings) {
+            chatAppDB cdb = new chatAppDB(getApplicationContext());
+            SQLiteDatabase db = cdb.getReadableDatabase();
+
+            String[] projection = {
+                    dbContractClass.dbContract.CONTACT_NAME
+            };
+            String selection = " * ";
+            String groupBy = dbContractClass.dbContract.CONTACT_NAME;
+            Cursor c = db.query(
+                    dbContractClass.dbContract.CHATT_DATA_TABLE_NAME, projection, null, null, groupBy, null, null);
+            try{
+                c.moveToFirst();
+                do{
+                    knownContacts.add(c.getString(0));
+                }while(c.moveToNext());
+            }catch (Exception e){
+            }finally {
+                c.close();
+            }
+
+            return null;
+        }
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {

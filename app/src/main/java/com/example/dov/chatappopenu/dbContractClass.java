@@ -25,6 +25,7 @@ public class dbContractClass {
                 "CREATE TABLE " + CHATT_DATA_TABLE_NAME + " (" +
                         _ID + " INTEGER PRIMARY KEY," +
                         CONTACT_NAME + " TEXT," +
+                        CONTACT_NUMBER + " TEXT," +
                         MESSAGE + " TEXT)";
     }
 }

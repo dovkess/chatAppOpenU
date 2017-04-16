@@ -3,6 +3,8 @@ package com.example.dov.chatappopenu;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.AsyncTask;
+
 import com.example.dov.chatappopenu.dbContractClass.dbContract;
 
 /**
@@ -26,4 +28,16 @@ public class chatAppDB extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {}
+
+//    public static void updateChat(String msg, String from){
+//        class asyncUpdate extends AsyncTask<String, Void, Void>{
+//
+//            @Override
+//            protected Void doInBackground(String... strings) {
+//
+//                return null;
+//            }
+//        }
+//        new asyncUpdate().execute(msg, from);
+//    }
 }

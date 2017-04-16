@@ -10,7 +10,9 @@ import java.util.Map;
 public class CountryToProvider{
 
     public static String[] getProvider(String country){
-        return mMap.get(country);
+        String emptyArr[] = {""};
+        String provs[] = mMap.get(country) != null ? mMap.get(country) : emptyArr;
+        return provs;
     }
 
     private static final Map<String, String[]> mMap;
