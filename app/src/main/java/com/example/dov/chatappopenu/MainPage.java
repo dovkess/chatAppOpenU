@@ -3,6 +3,7 @@ package com.example.dov.chatappopenu;
 import android.Manifest;
 import android.app.Dialog;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -185,32 +186,64 @@ public class MainPage extends AppCompatActivity {
     public void getPhoneFromeName(String name) {
         String number;
         ArrayList<String> contactNumbers = new ArrayList<String>();
-        if (ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.READ_CONTACTS)
-                == PackageManager.PERMISSION_GRANTED) {
-            String ret = null;
-            String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " = '" + name + "'";
-            String[] projection = new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER};
-            Cursor c = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    projection, selection, null, null);
 
-            c.moveToFirst();
-            do {
-                contactNumbers.add(c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
-            }
-            while (c.moveToNext());
-            c.close();
-            // TODO: prompt the user for one of the numbers
-            if (!contactNumbers.isEmpty()) {
-                number = contactNumbers.get(0);
-                number = stripSeparators(number);
-                if(!number.startsWith("+")){
-                    number = "+972" + number;
-                } else if(number.startsWith("+9725")){
-                    number = number.replace("+9725", "+97205");
-                }
-                Toast.makeText(getApplicationContext(), "item clicked : \n" + number, Toast.LENGTH_LONG).show();
+        chatAppDB cdb = new chatAppDB(getApplicationContext());
+        SQLiteDatabase db = cdb.getReadableDatabase();
+
+        String[] projection = {dbContractClass.dbContract.CONTACT_NUMBER};
+        String selection = dbContractClass.dbContract.CONTACT_NAME + " = '" + name + "'";
+
+        Cursor c = db.query(dbContractClass.dbContract.KNOWN_CNTCT_TABLE_NAME, projection, selection,
+                null, null, null, null);
+        try {
+            if (c.getCount() > 0) {
+                c.moveToFirst();
+                number = c.getString(0);
                 new isNumberRegistered().execute(number, name);
             }
+            else if (ContextCompat.checkSelfPermission(MainPage.this, Manifest.permission.READ_CONTACTS)
+                    == PackageManager.PERMISSION_GRANTED) {
+                String ret = null;
+                selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " = '" + name + "'";
+                projection = new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER};
+                Cursor c2 = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        projection, selection, null, null);
+                c2.moveToFirst();
+                do {
+                    contactNumbers.add(c2.getString(c2.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
+                }
+                while (c2.moveToNext());
+                c2.close();
+                // TODO: prompt the user for one of the numbers
+                if (!contactNumbers.isEmpty()) {
+                    number = contactNumbers.get(0);
+                    number = stripSeparators(number);
+                    if (!number.startsWith("+")) {
+                        number = "+972" + number;
+                    } else if (number.startsWith("+9725")) {
+                        number = number.replace("+9725", "+97205");
+                    }
+                    Toast.makeText(getApplicationContext(), "item clicked : \n" + number, Toast.LENGTH_LONG).show();
+                    new addNumToKnownContacts().execute(name, number);
+                    new isNumberRegistered().execute(number, name);
+                }
+            }
+        } catch (Exception e) {
+        } finally {
+            c.close();
+        }
+    }
+
+    private class addNumToKnownContacts extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... strings) {
+            chatAppDB cdb = new chatAppDB(getApplicationContext());
+            SQLiteDatabase wdb = cdb.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(dbContractClass.dbContract.CONTACT_NAME, strings[0]);
+            values.put(dbContractClass.dbContract.CONTACT_NUMBER, strings[1]);
+            wdb.insert(dbContractClass.dbContract.KNOWN_CNTCT_TABLE_NAME, null, values);
+            return null;
         }
     }
 
@@ -294,6 +327,8 @@ public class MainPage extends AppCompatActivity {
             return null;
         }
     }
+
+
 
 
     @Override

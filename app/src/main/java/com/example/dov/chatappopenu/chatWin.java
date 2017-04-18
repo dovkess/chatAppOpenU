@@ -164,7 +164,7 @@ public class chatWin extends Activity {
                     }
                     @Override
                     public String getBodyContentType() {
-                        return "application/json; charset=" + getParamsEncoding();
+                        return "application/json; charset=UTF-8"; //+ getParamsEncoding();
                     }
                 };
                 sRequest.setShouldCache(false);
@@ -179,7 +179,9 @@ public class chatWin extends Activity {
         @Override
         public void onReceive(Context contenxt, Intent intent){
             String msg = intent.getStringExtra("msg");
-            addItems(msg, name);
+            String broadName = intent.getStringExtra("name");
+            if(broadName.equals(name))
+                addItems(msg, name);
         }
     };
 
