@@ -6,7 +6,7 @@
     <string name="phone_number_exp">Please enter your phone number:</string>
     <string name="user_name_exp">Please enter the user name you would like:</string>
     <string name="email_text">Please enter your email address</string>
-    <string name="error_field_required">Fild req</string>
+    <string name="error_field_required">Field req</string>
     <string name="action_sign_in">Sign In</string>
     <string name="prompt_email">email</string>
     <string name="error_invalid_email">invalid email</string>

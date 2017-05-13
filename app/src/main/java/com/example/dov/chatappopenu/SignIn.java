@@ -6,12 +6,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.Activity;
 
-import android.app.LoaderManager.LoaderCallbacks;
-import android.content.ContentResolver;
 import android.content.Context;
-import android.content.CursorLoader;
 import android.content.Intent;
-import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
@@ -22,6 +18,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
@@ -29,7 +26,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -39,13 +35,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static android.telephony.PhoneNumberUtils.stripSeparators;
 
@@ -53,11 +43,7 @@ import static android.telephony.PhoneNumberUtils.stripSeparators;
 /**
  * A login screen that offers login via email/password.
  */
-public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
-
-    /**
-     * Keep track of the login task to ensure we can cancel it if requested.
-     */
+public class SignIn extends Activity{
     private UserLoginTask mAuthTask = null;
 
     // UI references.
@@ -222,7 +208,7 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             mUser = user;
         }
 
-        public byte[] getByteBodey(){
+        public byte[] getByteBody(){
             final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
             String token = prefs.getString("token", "-1");
             String stringBytes = "{\n\t\"token\": \"" + token + "\",\n\t\"name\": \"" + mUser + "\", \n\t\"id\": \"" + mPhoneId +
@@ -237,7 +223,6 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
             if (ContextCompat.checkSelfPermission(SignIn.this, Manifest.permission.INTERNET)
                     == PackageManager.PERMISSION_GRANTED){
                 RequestQueue queue = Volley.newRequestQueue(SignIn.this);
-                //String url = "https://httpbin.org/put";
                 String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/registerUser";
 
                 // Request a Json response from the provided URL.
@@ -256,19 +241,17 @@ public class SignIn extends Activity{// implements LoaderCallbacks<Cursor> {
                                 editor.apply();
                                 startActivity(mainPageIntent);
                             }
-//                            else if(res_status == 1)
-//                                startActivity(mainPageIntent);
                         }catch(Exception e){}
                     }
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        mPhoneView.setText(error.getMessage());
+                        Log.e("failed to connect", error.toString());
                     }
                 }){
                 @Override
                 public byte[] getBody() throws AuthFailureError {
-                    return getByteBodey();
+                    return getByteBody();
                 }
                 @Override
                 public String getBodyContentType() {

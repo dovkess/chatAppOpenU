@@ -1,10 +1,7 @@
 package com.example.dov.chatappopenu;
 
 import android.Manifest;
-import android.app.Dialog;
-import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -15,19 +12,15 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
-import android.support.annotation.BoolRes;
 import android.support.annotation.NonNull;
-import android.support.annotation.StringDef;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -40,23 +33,15 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import static android.telephony.PhoneNumberUtils.extractNetworkPortion;
-import static android.telephony.PhoneNumberUtils.isGlobalPhoneNumber;
-import static android.telephony.PhoneNumberUtils.normalizeNumber;
 import static android.telephony.PhoneNumberUtils.stripSeparators;
 
 public class MainPage extends AppCompatActivity {
@@ -83,7 +68,7 @@ public class MainPage extends AppCompatActivity {
                         @Override
                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                             String pickedName = contacts.get(position);
-                            getPhoneFromeName(pickedName);
+                            getPhoneFromName(pickedName);
                         }
                     });
                     return true;
@@ -95,7 +80,7 @@ public class MainPage extends AppCompatActivity {
                         @Override
                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                             String pickedName = knownContacts.get(position);
-                            getPhoneFromeName(pickedName);
+                            getPhoneFromName(pickedName);
                         }
                     });
                     return true;
@@ -140,12 +125,10 @@ public class MainPage extends AppCompatActivity {
             navigation.setSelectedItemId(R.id.all_contacts_item);
             mSearchContact.addTextChangedListener(new TextWatcher() {
                 @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                }
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
 
                 @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                }
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
 
                 @Override
                 public void afterTextChanged(Editable editable) {
@@ -183,7 +166,7 @@ public class MainPage extends AppCompatActivity {
         navigation.setSelectedItemId(navigation.getSelectedItemId());
     }
 
-    public void getPhoneFromeName(String name) {
+    public void getPhoneFromName(String name) {
         String number;
         ArrayList<String> contactNumbers = new ArrayList<String>();
 
@@ -223,8 +206,6 @@ public class MainPage extends AppCompatActivity {
                     } else if (number.startsWith("+9725")) {
                         number = number.replace("+9725", "+97205");
                     }
-                    Toast.makeText(getApplicationContext(), "item clicked : \n" + number, Toast.LENGTH_LONG).show();
-                    new addNumToKnownContacts().execute(name, number);
                     new isNumberRegistered().execute(number, name);
                 }
             }
@@ -235,8 +216,23 @@ public class MainPage extends AppCompatActivity {
     }
 
     private class addNumToKnownContacts extends AsyncTask<String, Void, Void> {
+        private boolean checkInDB(String name){
+            chatAppDB cdb = new chatAppDB(getApplicationContext());
+            SQLiteDatabase db = cdb.getReadableDatabase();
+            String[] projection = {dbContractClass.dbContract.CONTACT_NAME};
+            String selection = dbContractClass.dbContract.CONTACT_NAME + " = '" + name + "'";
+            String groupBy = dbContractClass.dbContract.CONTACT_NAME;
+            Cursor c = db.query(
+                    dbContractClass.dbContract.KNOWN_CNTCT_TABLE_NAME, projection, selection, null, groupBy, null, null);
+            if(c.getCount() > 0)
+                return true;
+            return false;
+        }
+
         @Override
         protected Void doInBackground(String... strings) {
+            if(checkInDB(strings[0]))
+                return null;
             chatAppDB cdb = new chatAppDB(getApplicationContext());
             SQLiteDatabase wdb = cdb.getWritableDatabase();
             ContentValues values = new ContentValues();
@@ -248,7 +244,7 @@ public class MainPage extends AppCompatActivity {
     }
 
     private class isNumberRegistered extends AsyncTask<String, Void, Boolean> {
-        private byte[] getByteBodey(String number){
+        private byte[] getByteBody(String number){
             String str_res = "{\n\t\"phone\": \"" + number + "\"\n}";
             return str_res.getBytes();
         }
@@ -266,13 +262,14 @@ public class MainPage extends AppCompatActivity {
                             JSONObject jresponse = new JSONObject(response);
                             Integer res_status = Integer.parseInt(jresponse.getString("status"));
                             if (res_status == 0) {
+                                new addNumToKnownContacts().execute(params[0], params[1]);
                                 Intent startChat = new Intent(MainPage.this, chatWin.class);
                                 startChat.putExtra("phone", params[0]);
                                 startChat.putExtra("name", params[1]);
                                 startActivity(startChat);
                             }
                             else if(res_status == -1){
-                                Toast.makeText(getApplicationContext(), "He/She does not have the app", Toast.LENGTH_LONG);
+                                Toast.makeText(getApplicationContext(), params[1] + " does not have the app yet!", Toast.LENGTH_LONG);
                             }
                         } catch (JSONException e) {
                             e.getStackTrace();
@@ -286,7 +283,7 @@ public class MainPage extends AppCompatActivity {
                 }) {
                     @Override
                     public byte[] getBody() throws AuthFailureError {
-                        return getByteBodey(params[0]);
+                        return getByteBody(params[0]);
                     }
                     @Override
                     public String getBodyContentType() {
@@ -310,7 +307,6 @@ public class MainPage extends AppCompatActivity {
             String[] projection = {
                     dbContractClass.dbContract.CONTACT_NAME
             };
-            String selection = " * ";
             String groupBy = dbContractClass.dbContract.CONTACT_NAME;
             Cursor c = db.query(
                     dbContractClass.dbContract.CHATT_DATA_TABLE_NAME, projection, null, null, groupBy, null, null);
@@ -323,13 +319,9 @@ public class MainPage extends AppCompatActivity {
             }finally {
                 c.close();
             }
-
             return null;
         }
     }
-
-
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {

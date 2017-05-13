@@ -58,7 +58,6 @@ public class tokenService extends FirebaseInstanceIdService {
             final String mPhoneId = tMgr.getDeviceId();
 
             String url = "http://app9443.cloudapp.net:8080/ChatApp/webresources/SignUp/updateToken";
-            //String url = "https://httpbin.org/put";
             RequestQueue queue = Volley.newRequestQueue(tokenService.this);
 
             StringRequest sRequest = new StringRequest(Request.Method.PUT, url, new Response.Listener<String>() {

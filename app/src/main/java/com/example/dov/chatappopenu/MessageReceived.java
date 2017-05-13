@@ -70,8 +70,9 @@ public class MessageReceived extends FirebaseMessagingService {
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
             mBuilder.setSmallIcon(R.drawable.ic_home_black_24dp);
-            mBuilder.setContentTitle("new message from: " + from);
+            mBuilder.setContentTitle("new message from: " + name);
             mBuilder.setContentText("Message content: " + message);
+            mBuilder.setAutoCancel(true);
 
             Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             mBuilder.setSound(alarmSound);
@@ -91,13 +92,12 @@ public class MessageReceived extends FirebaseMessagingService {
         String ret_val = null;
         if (ContextCompat.checkSelfPermission(MessageReceived.this, android.Manifest.permission.READ_CONTACTS)
                 == PackageManager.PERMISSION_GRANTED) {
-            //String selection = ContactsContract.CommonDataKinds.Phone.NUMBER + " = '" + strings[0] + "'";
             String[] projection = new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER};
             Cursor c = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                     projection, null, null, null);
             c.moveToFirst();
             do {
-                if(PhoneNumberUtils.compare(c.getString(1), number)){
+                if(number.equals(PhoneNumberUtils.normalizeNumber(c.getString(1)))){
                     ret_val = c.getString(0);
                     return ret_val;
                 }

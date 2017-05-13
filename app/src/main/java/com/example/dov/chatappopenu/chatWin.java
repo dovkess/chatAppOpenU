@@ -69,9 +69,7 @@ public class chatWin extends Activity {
         chatAppDB cdb = new chatAppDB(getApplicationContext());
         SQLiteDatabase db = cdb.getReadableDatabase();
 
-        String[] projection = {
-                dbContractClass.dbContract.MESSAGE
-        };
+        String[] projection = {dbContractClass.dbContract.MESSAGE};
         String selection = dbContractClass.dbContract.CONTACT_NUMBER + " = '" + phoneNumber + "'";
 
         Cursor c = db.query(
@@ -93,7 +91,6 @@ public class chatWin extends Activity {
             c.close();
         }
 
-        // TODO: create our own list item view
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, listItems);
         messageList.setSelection(adapter.getCount()-1);
         messageList.setAdapter(adapter);
@@ -180,8 +177,10 @@ public class chatWin extends Activity {
         public void onReceive(Context contenxt, Intent intent){
             String msg = intent.getStringExtra("msg");
             String broadName = intent.getStringExtra("name");
-            if(broadName.equals(name))
+            if(broadName.equals(name)) {
+                msg = broadName + ": " + msg;
                 addItems(msg, name);
+            }
         }
     };
 
