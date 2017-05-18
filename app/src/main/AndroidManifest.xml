@@ -25,7 +25,11 @@
             android:label="@string/title_activity_sign_in"
             android:windowSoftInputMode="adjustResize|stateVisible" />
         <activity
-            android:name=".chatWin"/>
+            android:name=".chatWin">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.dov.chatappopenu.MainPage" />
+        </activity>
 
         <service android:name=".tokenService">
             <intent-filter>

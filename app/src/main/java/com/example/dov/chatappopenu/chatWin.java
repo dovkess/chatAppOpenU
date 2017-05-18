@@ -2,7 +2,6 @@ package com.example.dov.chatappopenu;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.ListActivity;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -14,10 +13,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
-import android.provider.ContactsContract;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -25,32 +22,28 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
-
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
+/**
+ * This class is the Activity that shows the chat with eatch contact.
+ */
 public class chatWin extends Activity {
-    ListView messageList;
-    ArrayList<String> listItems;
-    ArrayAdapter<String> adapter;
-    EditText messageText;
-    Button send;
-    String phoneNumber;
-    String name;
+    ListView messageList; // listView of messages with user
+    ArrayList<String> listItems; // The actual messages
+    ArrayAdapter<String> adapter; // The adapter between the view and the messages
+    EditText messageText; // The field to enter data
+    Button send; // send a message
+    String phoneNumber; // contacts' phone number
+    String name; // contacts' name
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,6 +100,7 @@ public class chatWin extends Activity {
         });
     }
 
+    // This function adds a message to the DB and to the adapter.
     public void addItems(String message, String sender) {
         String fullMsg = sender + ": " + message;
         listItems.add(fullMsg);
@@ -178,8 +172,7 @@ public class chatWin extends Activity {
             String msg = intent.getStringExtra("msg");
             String broadName = intent.getStringExtra("name");
             if(broadName.equals(name)) {
-                msg = broadName + ": " + msg;
-                addItems(msg, name);
+                addItems(msg, broadName);
             }
         }
     };

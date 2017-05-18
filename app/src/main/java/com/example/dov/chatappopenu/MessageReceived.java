@@ -3,7 +3,6 @@ package com.example.dov.chatappopenu;
 import android.*;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -11,18 +10,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.IBinder;
-import android.os.Parcel;
 import android.provider.ContactsContract;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.NotificationCompat;
 import android.telephony.PhoneNumberUtils;
-import android.widget.Toast;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
-import java.util.List;
 import java.util.Map;
 
 public class MessageReceived extends FirebaseMessagingService {
@@ -61,10 +55,11 @@ public class MessageReceived extends FirebaseMessagingService {
             lbm.sendBroadcast(broadInt);
 
             // add message to DB
+            String fullMsg = name + ": " + message;
             SQLiteDatabase wdb = cdb.getWritableDatabase();
             ContentValues values = new ContentValues();
             values.put(dbContractClass.dbContract.CONTACT_NAME, name);
-            values.put(dbContractClass.dbContract.MESSAGE, message);
+            values.put(dbContractClass.dbContract.MESSAGE, fullMsg);
             values.put(dbContractClass.dbContract.CONTACT_NUMBER, from);
             long newRowId = wdb.insert(dbContractClass.dbContract.CHATT_DATA_TABLE_NAME, null, values);
 
@@ -90,6 +85,8 @@ public class MessageReceived extends FirebaseMessagingService {
 
     public String findNameByNumber(String number){
         String ret_val = null;
+        number = PhoneNumberUtils.normalizeNumber(number);
+
         if (ContextCompat.checkSelfPermission(MessageReceived.this, android.Manifest.permission.READ_CONTACTS)
                 == PackageManager.PERMISSION_GRANTED) {
             String[] projection = new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER};
@@ -97,7 +94,9 @@ public class MessageReceived extends FirebaseMessagingService {
                     projection, null, null, null);
             c.moveToFirst();
             do {
-                if(number.equals(PhoneNumberUtils.normalizeNumber(c.getString(1)))){
+                String phone1Hash = PhoneNumberUtils.toCallerIDMinMatch(number);
+                String phone2Hash = PhoneNumberUtils.toCallerIDMinMatch(c.getString(1));
+                if(phone1Hash.equals(phone2Hash)){
                     ret_val = c.getString(0);
                     return ret_val;
                 }

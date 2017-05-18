@@ -233,7 +233,7 @@ public class SignIn extends Activity{
                             Intent mainPageIntent = new Intent(SignIn.this, MainPage.class);
                             JSONObject jresponse = new JSONObject(response);
                             Integer res_status = Integer.parseInt(jresponse.getString("status"));
-                            if (res_status == 0 || res_status == -1) {
+                            if (res_status == 0 || res_status == -1) { // 0 -- user created correctly. -1 -- user exists
                                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SignIn.this);
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.putString("uid", mPhoneId);
